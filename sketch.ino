@@ -3,14 +3,36 @@
 #include <Adafruit_Sensor.h>
 #include <ESP32Servo.h>
 
-// penjelasn objek yang dipakai
-Adafruit_MPU6050 mpu;
-Servo servo1, servo2, servo3, servo4, servo5;
+Servo myServos[5];
 
-// penjelasan pin masing-masing servo
-#define SERVO1_PIN 12
-#define SERVO2_PIN 14
-#define SERVO3_PIN 27
-#define SERVO4_PIN 26 
-#define SERVO5_PIN 13
-#define PIR_PIN 33
+int servoPins[5] = {12, 14, 27, 26, 13};
+
+void setup() {
+    Serial.begin(115200);
+
+    for (int i = 0; i < 5; i++) {
+        myServos[i].attach(servoPins[i]);
+        myServos[i].write(90);
+    }
+    
+    pinMode(18, INPUT);
+}
+
+void loop() {
+    int gerakanManusia = digitalRead(18);
+    
+    if(gerakanManusia == HIGH) {
+        
+        for(int i = 0; i < 5; i++) {
+            myServos[i].write(45);
+        }
+        delay(1000);
+        
+        for(int i = 0; i < 5; i++) {
+            myServos[i].write(90);
+        }
+        delay(3000);
+    }
+    
+    delay(100);
+}
