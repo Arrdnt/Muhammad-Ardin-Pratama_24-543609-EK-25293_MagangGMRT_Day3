@@ -1,1 +1,96 @@
-input text here...
+#include <Wire.h>
+#include <Adafruit_MPU6050.h>
+#include <Adafruit_Sensor.h>
+#include <ESP32Servo.h>
+
+
+(bagian diatas menjelaskan tentang dependensi yang diperlukan atau load library yang digunakan, dapat disesuaikan dengan device atau modul yang digunakan)
+
+Servo myServos[5];
+Adafruit_MPU6050 mpu;
+int servoPins[5] = {12, 14, 27, 26, 13};
+float rollpitchsense = 0.5;
+float yawsense = 0.5;
+
+
+(Bagian ini merupakan inisiasi awal dengan mendeklarasikan variabel2 yang ada pada kode dan akan digunakan pada proses selanjutnya, contohnya myServos[5] menjelaskan bahwa ada lima data pada index. 
+adapun variabel lainnya yang berfungsi sebagai prasyarat untuk mengisi dan menjalankan kode sesuai project yang akan dituju)
+
+
+void setup() {
+    Serial.begin(115200);
+
+    for (int i = 0; i < 5; i++) {
+        myServos[i].attach(servoPins[i]);
+        myServos[i].write(90);
+    }
+    while (!mpu.begin()) {
+      Serial.println("Failed");
+      delay(500);
+    }
+    
+    pinMode(18, INPUT);
+}
+
+#Kode diatas merupakan eksekusi awal kode, dimana fungsi void setup menjalankan device yang akan digunakan, serta kita bisa mengatur akan pengaturan awal seperti apa yang kita inginkan, contohnya for (int.... ini menginisiasi untuk setiap index akan di attach dengan  myServos[i].attach kemudian diputar sebanyak 90 derajat.
+
+void loop() {
+  int gerakanManusia = digitalRead(18);
+  sensors_event_t a, g, temp;
+  mpu.getEvent(&a, &g, &temp);
+
+#Void loop merupakan main section yang menjalankan proses kode secara terus menerus setelah void setup, disinilah proyek utama kode ditulis. dimulai dengan variabel int gerakanManusia, ini menggunakan fungsi bawaan digitalRead(18) yang artinya fungsi ini membaca data dari input 18 kemudian menggunakannya untuk keperluan sensor PIR, Untuk sensors_event dan mpu.getEvent merupakan inisiasi khusus untuk modul MPU6050 mendapatkan fungsi slider akselerasi,rotasi dan temperatur
+
+  if (gerakanManusia == HIGH) {
+    for (int i = 0; i < 5; i++) {
+      myServos[i].write(45);
+    }
+    delay(1000);
+
+    for (int i = 0; i < 5; i++) {
+      myServos[i].write(90);
+    }
+    delay(3000);
+  }
+  else if (gerakanManusia != HIGH) {
+    float roll = a.acceleration.x;
+    float pitch = a.acceleration.y;
+    float yaw = g.gyro.z;
+
+    if (roll > rollpitchsense) {
+      myServos[0].write(0);
+      myServos[1].write(0);
+    } 
+    else if (roll < rollpitchsense) {
+      myServos[0].write(180);
+      myServos[1].write(180);
+    }
+
+    if (pitch > rollpitchsense) {
+      myServos[2].write(180);
+      myServos[3].write(180);
+    } 
+    else if (pitch < rollpitchsense) {
+      myServos[2].write(0);
+      myServos[3].write(0);
+    }
+
+    if (yaw > yawsense) {
+      myServos[4].write(180);
+      delay(1000);
+      myServos[4].write(90);
+      if (yaw == 90) {
+        yaw = 90;
+      }
+    } 
+    else if (yaw < yawsense) {
+      myServos[4].write(0);
+      delay(1000);
+      myServos[4].write(90);
+      if (yaw == 90) {
+        yaw = 90;
+      }
+    }
+
+#Runtutan kode if, else if dan else diatas merupakan kinerja fungsi utama, bekerja sebagai penggerak servo ketika slider digeser. seperti yang terlihat bahwa jika ada slider digeser lebih dari atau kurang dari angka sensitivitas, maka kita bisa menentukan arah servo mau kemana dengan menggunakan servo.write. Selain itu, aturan ini bisa diaplikasikan sesuai kondisi atau aturan yang dianjurkan, dalam kode tersebut ada 3 kombinasi fungsi yang menggerakkan servo, yaki Roll Pitch dan Yaw.
+
